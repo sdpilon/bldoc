@@ -1,9 +1,9 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
+
+	"bldoc/internal/manifest"
 )
 
 func newRmDepCmd() *cobra.Command {
@@ -14,15 +14,26 @@ func newRmDepCmd() *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := parseTargetRef(args[0]); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "bldoc rm-dep: %v\n", err)
-				return err
+			targetRef, err := parseTargetRef(args[0])
+			if err != nil {
+				return reportErr(cmd, err)
 			}
-			if _, err := parseSourceRef(args[1]); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "bldoc rm-dep: %v\n", err)
-				return err
+			sourceRef, err := parseSourceRef(args[1])
+			if err != nil {
+				return reportErr(cmd, err)
 			}
-			return notImplemented(cmd)
+
+			m, err := manifest.Load(manifest.FileName)
+			if err != nil {
+				return reportErr(cmd, err)
+			}
+			if err := manifest.RemoveDep(m, targetRef.Target, sourceRef.Source, sourceRef.Path); err != nil {
+				return reportErr(cmd, err)
+			}
+			if err := manifest.Save(manifest.FileName, m); err != nil {
+				return reportErr(cmd, err)
+			}
+			return nil
 		},
 	}
 }

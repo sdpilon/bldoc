@@ -1,6 +1,12 @@
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+
+	"bldoc/internal/manifest"
+)
 
 func newListCmd() *cobra.Command {
 	return &cobra.Command{
@@ -10,7 +16,14 @@ func newListCmd() *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return notImplemented(cmd)
+			m, err := manifest.Load(manifest.FileName)
+			if err != nil {
+				return reportErr(cmd, err)
+			}
+			for _, name := range manifest.ListTargets(m) {
+				fmt.Fprintln(cmd.OutOrStdout(), name)
+			}
+			return nil
 		},
 	}
 }

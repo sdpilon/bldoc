@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"bldoc/internal/manifest"
 )
 
 func newAddDepCmd() *cobra.Command {
@@ -17,19 +19,33 @@ func newAddDepCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			targetRef, err := parseTargetRef(args[0])
 			if err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "bldoc add-dep: %v\n", err)
-				return err
+				return reportErr(cmd, err)
 			}
-			if _, err := parseSourceRef(args[1]); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "bldoc add-dep: %v\n", err)
-				return err
+			sourceRef, err := parseSourceRef(args[1])
+			if err != nil {
+				return reportErr(cmd, err)
 			}
 			if format != "" && targetRef.Field == "" {
-				err := fmt.Errorf("--format requires a target-ref with a :field (got %q)", args[0])
-				fmt.Fprintf(cmd.ErrOrStderr(), "bldoc add-dep: %v\n", err)
-				return err
+				return reportErr(cmd, fmt.Errorf("--format requires a target-ref with a :field (got %q)", args[0]))
 			}
-			return notImplemented(cmd)
+
+			m, err := manifest.Load(manifest.FileName)
+			if err != nil {
+				return reportErr(cmd, err)
+			}
+			dep := manifest.Dep{
+				Source: sourceRef.Source,
+				Path:   sourceRef.Path,
+				Field:  targetRef.Field,
+				Format: format,
+			}
+			if err := manifest.AddDep(m, targetRef.Target, dep); err != nil {
+				return reportErr(cmd, err)
+			}
+			if err := manifest.Save(manifest.FileName, m); err != nil {
+				return reportErr(cmd, err)
+			}
+			return nil
 		},
 	}
 	cmd.Flags().StringVar(&format, "format", "", "template used to render the field's value")

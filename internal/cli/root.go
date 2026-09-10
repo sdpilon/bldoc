@@ -31,6 +31,14 @@ func notImplemented(cmd *cobra.Command) error {
 	return errors.New("not yet implemented")
 }
 
+// reportErr prints err to the command's stderr in the standard "bldoc
+// <command>: <message>" form and returns it, so a RunE can `return
+// reportErr(cmd, err)`.
+func reportErr(cmd *cobra.Command, err error) error {
+	fmt.Fprintf(cmd.ErrOrStderr(), "bldoc %s: %v\n", cmd.Name(), err)
+	return err
+}
+
 // exactArgs returns a cobra.PositionalArgs validator requiring exactly n
 // positional arguments, printing its own usage-error message on failure
 // (SilenceErrors/SilenceUsage on the root means nothing else will).

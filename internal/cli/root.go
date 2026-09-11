@@ -8,7 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const version = "0.0.0-dev"
+// version is the CLI's reported version. It is overwritten at release
+// build time via -ldflags "-X bldoc/internal/cli.version=...", so it
+// must stay a var rather than a const.
+var version = "0.0.0-dev"
 
 // NewRootCmd builds the bldoc root command with every subcommand
 // attached.

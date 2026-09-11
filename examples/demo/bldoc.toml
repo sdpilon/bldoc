@@ -1,0 +1,27 @@
+[[target]]
+  name = "NOTES"
+
+  [[target.dep]]
+    source = "intro.txt"
+
+  [[target.dep]]
+    source = "license.txt"
+
+[[target]]
+  name = "SUMMARY"
+
+  [[target.dep]]
+    source = "pyproject.toml"
+    path = "project.requires-python"
+    field = "version"
+    format = "Python version must be %s to run this project."
+
+  [[target.dep]]
+    source = "package.json"
+    path = "name"
+    field = "name"
+
+  [[target.dep]]
+    source = "config.yaml"
+    path = "owner.team"
+    field = "team"

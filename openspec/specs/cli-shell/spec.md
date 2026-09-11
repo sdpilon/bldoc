@@ -76,11 +76,11 @@ compiling every target in the manifest.
 
 #### Scenario: Make with an explicit target
 - **WHEN** the user runs `bldoc make README`
-- **THEN** the CLI accepts the argument and reports the command as not yet implemented
+- **THEN** the CLI compiles `README`'s recorded dependencies into its intermediate (see the `compile-engine` capability)
 
 #### Scenario: Make with no target
 - **WHEN** the user runs `bldoc make` with no arguments
-- **THEN** the CLI accepts the invocation as a build-all request and reports the command as not yet implemented
+- **THEN** the CLI compiles every target recorded in the manifest into its intermediate (see the `compile-engine` capability)
 
 #### Scenario: Make rejects more than one target
 - **WHEN** the user runs `bldoc make README ROADMAP`
@@ -104,17 +104,6 @@ target name.
 #### Scenario: No arguments accepted
 - **WHEN** the user runs `bldoc list`
 - **THEN** the CLI accepts the invocation and lists the manifest's targets (see the `manifest-store` capability)
-
-### Requirement: Valid invocations report not-yet-implemented
-`make`, given syntactically valid arguments, SHALL print a message to
-stderr indicating the command is not yet implemented and exit with
-status 1. `new`, `add-dep`, `rm-dep`, `rm`, `list`, and `show` no longer
-exhibit this behavior — each performs its real manifest operation
-instead (see the `manifest-store` capability).
-
-#### Scenario: Not-yet-implemented exit code
-- **WHEN** `make` is run with valid arguments
-- **THEN** the CLI exits with status 1 and prints a message to stderr naming the command as not yet implemented
 
 ### Requirement: Help and version behave normally
 `--help`/`-h` on the root command or any subcommand SHALL print usage

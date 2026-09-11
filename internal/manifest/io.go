@@ -37,7 +37,7 @@ func Save(path string, m *Manifest) error {
 	if err != nil {
 		return fmt.Errorf("writing manifest %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if err := toml.NewEncoder(f).Encode(m); err != nil {
 		return fmt.Errorf("encoding manifest %s: %w", path, err)
 	}

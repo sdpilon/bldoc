@@ -9,7 +9,7 @@ func newMakeCmd() *cobra.Command {
 		Args:          rangeArgs(0, 1),
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return notImplemented(cmd)
 		},
 	}

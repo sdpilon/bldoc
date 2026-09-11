@@ -15,13 +15,13 @@ func newListCmd() *cobra.Command {
 		Args:          exactArgs(0),
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			m, err := manifest.Load(manifest.FileName)
 			if err != nil {
 				return reportErr(cmd, err)
 			}
 			for _, name := range manifest.ListTargets(m) {
-				fmt.Fprintln(cmd.OutOrStdout(), name)
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), name)
 			}
 			return nil
 		},

@@ -25,7 +25,7 @@ func newShowCmd() *cobra.Command {
 				return reportErr(cmd, err)
 			}
 			for _, dep := range target.Deps {
-				fmt.Fprintln(cmd.OutOrStdout(), formatDep(dep))
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), formatDep(dep))
 			}
 			return nil
 		},

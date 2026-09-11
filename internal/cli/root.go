@@ -1,3 +1,5 @@
+// Package cli implements bldoc's command-line interface: the root
+// command, its subcommands, and their shared argument-parsing helpers.
 package cli
 
 import (
@@ -8,6 +10,8 @@ import (
 
 const version = "0.0.0-dev"
 
+// NewRootCmd builds the bldoc root command with every subcommand
+// attached.
 func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "bldoc",
@@ -27,7 +31,7 @@ func NewRootCmd() *cobra.Command {
 // <command>: <message>" form and returns it, so a RunE can `return
 // reportErr(cmd, err)`.
 func reportErr(cmd *cobra.Command, err error) error {
-	fmt.Fprintf(cmd.ErrOrStderr(), "bldoc %s: %v\n", cmd.Name(), err)
+	_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "bldoc %s: %v\n", cmd.Name(), err)
 	return err
 }
 
@@ -37,7 +41,7 @@ func reportErr(cmd *cobra.Command, err error) error {
 func exactArgs(n int) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) != n {
-			fmt.Fprintf(cmd.ErrOrStderr(), "bldoc %s: expected exactly %d argument(s), got %d\n", cmd.Name(), n, len(args))
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "bldoc %s: expected exactly %d argument(s), got %d\n", cmd.Name(), n, len(args))
 			return fmt.Errorf("wrong number of arguments")
 		}
 		return nil
@@ -45,11 +49,11 @@ func exactArgs(n int) cobra.PositionalArgs {
 }
 
 // rangeArgs returns a cobra.PositionalArgs validator requiring between
-// min and max (inclusive) positional arguments.
-func rangeArgs(min, max int) cobra.PositionalArgs {
+// minArgs and maxArgs (inclusive) positional arguments.
+func rangeArgs(minArgs, maxArgs int) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
-		if len(args) < min || len(args) > max {
-			fmt.Fprintf(cmd.ErrOrStderr(), "bldoc %s: expected between %d and %d argument(s), got %d\n", cmd.Name(), min, max, len(args))
+		if len(args) < minArgs || len(args) > maxArgs {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "bldoc %s: expected between %d and %d argument(s), got %d\n", cmd.Name(), minArgs, maxArgs, len(args))
 			return fmt.Errorf("wrong number of arguments")
 		}
 		return nil

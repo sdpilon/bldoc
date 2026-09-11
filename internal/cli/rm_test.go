@@ -16,11 +16,30 @@ func TestRm_MissingTarget(t *testing.T) {
 }
 
 func TestRm_ValidTarget(t *testing.T) {
-	_, stderr, err := execute(t, "rm", "README")
-	if err == nil {
-		t.Fatal("expected an error since the command is not yet implemented")
+	t.Chdir(t.TempDir())
+	newTarget(t, "README")
+
+	if _, stderr, err := execute(t, "rm", "README"); err != nil {
+		t.Fatalf("rm: err=%v stderr=%q", err, stderr)
 	}
-	if !strings.Contains(stderr, "bldoc rm: not yet implemented") {
-		t.Fatalf("expected not-yet-implemented message, got stderr=%q", stderr)
+
+	stdout, _, err := execute(t, "list")
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("expected no targets remaining, got stdout=%q", stdout)
+	}
+}
+
+func TestRm_UnknownTargetRejected(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	_, stderr, err := execute(t, "rm", "MISSING")
+	if err == nil {
+		t.Fatal("expected an error removing an unknown target")
+	}
+	if stderr == "" {
+		t.Fatal("expected an error message on stderr")
 	}
 }

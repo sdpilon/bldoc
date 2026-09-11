@@ -30,7 +30,7 @@ be rejected as an unknown command.
 
 #### Scenario: Valid target name
 - **WHEN** the user runs `bldoc new README`
-- **THEN** the CLI accepts the argument and reports the command as not yet implemented
+- **THEN** the CLI accepts the argument and records a new target named `README` in the manifest (see the `manifest-store` capability)
 
 ### Requirement: `add-dep` parses target-ref, source-ref, and optional format
 `add-dep` SHALL require a target-ref, a source-ref, and accept an
@@ -63,7 +63,7 @@ grammar as `add-dep`, and SHALL NOT accept a `--format` flag.
 
 #### Scenario: Removing a whole-file dependency
 - **WHEN** the user runs `bldoc rm-dep README pyproject.toml`
-- **THEN** the CLI parses the target-ref and source-ref and reports the command as not yet implemented
+- **THEN** the CLI parses the target-ref and source-ref and removes the matching dependency from the manifest (see the `manifest-store` capability)
 
 #### Scenario: `--format` is not accepted
 - **WHEN** the user runs `bldoc rm-dep` with a `--format` flag
@@ -103,15 +103,17 @@ target name.
 
 #### Scenario: No arguments accepted
 - **WHEN** the user runs `bldoc list`
-- **THEN** the CLI accepts the invocation and reports the command as not yet implemented
+- **THEN** the CLI accepts the invocation and lists the manifest's targets (see the `manifest-store` capability)
 
 ### Requirement: Valid invocations report not-yet-implemented
-Every recognized command, given syntactically valid arguments, SHALL
-print a message to stderr indicating the command is not yet implemented
-and exit with status 1.
+`make`, given syntactically valid arguments, SHALL print a message to
+stderr indicating the command is not yet implemented and exit with
+status 1. `new`, `add-dep`, `rm-dep`, `rm`, `list`, and `show` no longer
+exhibit this behavior — each performs its real manifest operation
+instead (see the `manifest-store` capability).
 
 #### Scenario: Not-yet-implemented exit code
-- **WHEN** any recognized command is run with valid arguments
+- **WHEN** `make` is run with valid arguments
 - **THEN** the CLI exits with status 1 and prints a message to stderr naming the command as not yet implemented
 
 ### Requirement: Help and version behave normally

@@ -1,8 +1,12 @@
 package cli
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"bldoc/internal/manifest"
 )
 
 func TestList_ExtraArgumentRejected(t *testing.T) {
@@ -18,12 +22,46 @@ func TestList_ExtraArgumentRejected(t *testing.T) {
 	}
 }
 
-func TestList_NoArguments(t *testing.T) {
+func TestList_NoTargets(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	stdout, _, err := execute(t, "list")
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("expected no target names, got stdout=%q", stdout)
+	}
+}
+
+func TestList_TargetsListed(t *testing.T) {
+	t.Chdir(t.TempDir())
+	newTarget(t, "README")
+	newTarget(t, "CHANGELOG")
+
+	stdout, _, err := execute(t, "list")
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	lines := strings.Fields(stdout)
+	if len(lines) != 2 || lines[0] != "README" || lines[1] != "CHANGELOG" {
+		t.Fatalf("expected [README CHANGELOG] in declaration order, got %v", lines)
+	}
+}
+
+func TestList_MalformedManifestRejected(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	path := filepath.Join(dir, manifest.FileName)
+	if err := os.WriteFile(path, []byte("not [ valid toml"), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
 	_, stderr, err := execute(t, "list")
 	if err == nil {
-		t.Fatal("expected an error since the command is not yet implemented")
+		t.Fatal("expected an error reading a malformed manifest")
 	}
-	if !strings.Contains(stderr, "bldoc list: not yet implemented") {
-		t.Fatalf("expected not-yet-implemented message, got stderr=%q", stderr)
+	if stderr == "" {
+		t.Fatal("expected an error message on stderr")
 	}
 }

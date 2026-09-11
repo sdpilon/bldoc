@@ -1,29 +1,12 @@
 package cli
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
-
-func TestMake_ExplicitTarget(t *testing.T) {
-	_, stderr, err := execute(t, "make", "README")
-	if err == nil {
-		t.Fatal("expected an error since the command is not yet implemented")
-	}
-	if !strings.Contains(stderr, "bldoc make: not yet implemented") {
-		t.Fatalf("expected not-yet-implemented message, got stderr=%q", stderr)
-	}
-}
-
-func TestMake_NoTarget(t *testing.T) {
-	_, stderr, err := execute(t, "make")
-	if err == nil {
-		t.Fatal("expected an error since the command is not yet implemented")
-	}
-	if !strings.Contains(stderr, "bldoc make: not yet implemented") {
-		t.Fatalf("expected not-yet-implemented message, got stderr=%q", stderr)
-	}
-}
 
 func TestMake_TooManyTargets(t *testing.T) {
 	_, stderr, err := execute(t, "make", "README", "ROADMAP")
@@ -35,5 +18,119 @@ func TestMake_TooManyTargets(t *testing.T) {
 	}
 	if stderr == "" {
 		t.Fatal("expected a usage error message on stderr")
+	}
+}
+
+func TestMake_UnknownTargetRejected(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	_, stderr, err := execute(t, "make", "MISSING")
+	if err == nil {
+		t.Fatal("expected an error for an unknown target")
+	}
+	if stderr == "" {
+		t.Fatal("expected an error message on stderr")
+	}
+}
+
+func TestMake_ExplicitTarget_RawMode(t *testing.T) {
+	t.Chdir(t.TempDir())
+	newTarget(t, "README")
+	if err := os.WriteFile("a.txt", []byte("hello "), 0o644); err != nil {
+		t.Fatalf("WriteFile a.txt: %v", err)
+	}
+	if err := os.WriteFile("b.txt", []byte("world"), 0o644); err != nil {
+		t.Fatalf("WriteFile b.txt: %v", err)
+	}
+	if _, _, err := execute(t, "add-dep", "README", "a.txt"); err != nil {
+		t.Fatalf("add-dep a.txt: %v", err)
+	}
+	if _, _, err := execute(t, "add-dep", "README", "b.txt"); err != nil {
+		t.Fatalf("add-dep b.txt: %v", err)
+	}
+
+	if _, stderr, err := execute(t, "make", "README"); err != nil {
+		t.Fatalf("make: err=%v stderr=%q", err, stderr)
+	}
+
+	data, err := os.ReadFile(filepath.Join(".bldoc", "README"))
+	if err != nil {
+		t.Fatalf("reading .bldoc/README: %v", err)
+	}
+	if string(data) != "hello world" {
+		t.Fatalf("expected %q, got %q", "hello world", data)
+	}
+}
+
+func TestMake_ExplicitTarget_FieldMode(t *testing.T) {
+	t.Chdir(t.TempDir())
+	newTarget(t, "README")
+	if err := os.WriteFile("pyproject.toml", []byte("[project]\nrequires-python = \"3.11\"\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile pyproject.toml: %v", err)
+	}
+	if _, _, err := execute(t, "add-dep", "README:version", "--format", "Python version must be %s to run this project.", "pyproject.toml:project.requires-python"); err != nil {
+		t.Fatalf("add-dep: %v", err)
+	}
+
+	if _, stderr, err := execute(t, "make", "README"); err != nil {
+		t.Fatalf("make: err=%v stderr=%q", err, stderr)
+	}
+
+	data, err := os.ReadFile(filepath.Join(".bldoc", "README.json"))
+	if err != nil {
+		t.Fatalf("reading .bldoc/README.json: %v", err)
+	}
+	var got map[string]struct {
+		Value string `json:"value"`
+		Raw   string `json:"raw"`
+	}
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("unmarshaling intermediate: %v", err)
+	}
+	f, ok := got["version"]
+	if !ok {
+		t.Fatalf("expected a version field, got %+v", got)
+	}
+	if f.Raw != "3.11" {
+		t.Fatalf("expected raw 3.11, got %q", f.Raw)
+	}
+	want := "Python version must be 3.11 to run this project."
+	if f.Value != want {
+		t.Fatalf("expected value %q, got %q", want, f.Value)
+	}
+}
+
+func TestMake_NoTarget_CompilesAll(t *testing.T) {
+	t.Chdir(t.TempDir())
+	newTarget(t, "README")
+	newTarget(t, "CHANGELOG")
+	if err := os.WriteFile("a.txt", []byte("a"), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	if _, _, err := execute(t, "add-dep", "README", "a.txt"); err != nil {
+		t.Fatalf("add-dep: %v", err)
+	}
+
+	if _, stderr, err := execute(t, "make"); err != nil {
+		t.Fatalf("make: err=%v stderr=%q", err, stderr)
+	}
+
+	if _, err := os.Stat(filepath.Join(".bldoc", "README")); err != nil {
+		t.Fatalf("expected .bldoc/README to exist: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(".bldoc", "CHANGELOG")); err != nil {
+		t.Fatalf("expected .bldoc/CHANGELOG to exist: %v", err)
+	}
+}
+
+func TestMake_NoTarget_NoTargetsIsNoOp(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	if _, stderr, err := execute(t, "make"); err != nil {
+		t.Fatalf("make: err=%v stderr=%q", err, stderr)
+	}
+
+	if _, err := os.Stat(".bldoc"); err == nil {
+		t.Fatal("expected no .bldoc directory to be created for an empty manifest")
 	}
 }

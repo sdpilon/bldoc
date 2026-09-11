@@ -3,7 +3,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -26,13 +25,6 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newShowCmd())
 	root.AddCommand(newListCmd())
 	return root
-}
-
-// notImplemented prints the standard stub message for a command whose
-// arguments were valid but whose real behavior doesn't exist yet.
-func notImplemented(cmd *cobra.Command) error {
-	_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "bldoc %s: not yet implemented\n", cmd.Name())
-	return errors.New("not yet implemented")
 }
 
 // reportErr prints err to the command's stderr in the standard "bldoc

@@ -1,0 +1,30 @@
+version: 2
+
+builds:
+  - id: bldoc
+    main: ./cmd/bldoc
+    binary: bldoc
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X bldoc/internal/cli.version={{.Version}}
+
+archives:
+  - id: bldoc
+    ids:
+      - bldoc
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc

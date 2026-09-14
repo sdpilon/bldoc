@@ -5,16 +5,16 @@ import (
 	"testing"
 )
 
-func newTarget(t *testing.T, name string) {
+func newTarget(t *testing.T, name, mode string) {
 	t.Helper()
-	if _, stderr, err := execute(t, "new", name); err != nil {
-		t.Fatalf("new %s: err=%v stderr=%q", name, err, stderr)
+	if _, stderr, err := execute(t, "new", name, "--mode", mode); err != nil {
+		t.Fatalf("new %s --mode %s: err=%v stderr=%q", name, mode, err, stderr)
 	}
 }
 
 func TestAddDep_WholeFile(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
+	newTarget(t, "README", "raw")
 
 	if _, stderr, err := execute(t, "add-dep", "README", "pyproject.toml"); err != nil {
 		t.Fatalf("add-dep: err=%v stderr=%q", err, stderr)
@@ -24,14 +24,14 @@ func TestAddDep_WholeFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("show: %v", err)
 	}
-	if strings.TrimSpace(stdout) != "pyproject.toml" {
+	if !strings.Contains(stdout, "pyproject.toml") {
 		t.Fatalf("expected pyproject.toml recorded, got stdout=%q", stdout)
 	}
 }
 
 func TestAddDep_FieldWithFormat(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
+	newTarget(t, "README", "field")
 
 	_, stderr, err := execute(t, "add-dep", "README:version", "--format", "Python version must be %s.", "pyproject.toml:project.requires-python")
 	if err != nil {
@@ -87,7 +87,7 @@ func TestAddDep_UnknownTargetRejected(t *testing.T) {
 
 func TestAddDep_FieldModeRejectedOnRawTarget(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
+	newTarget(t, "README", "raw")
 	if _, _, err := execute(t, "add-dep", "README", "a.toml"); err != nil {
 		t.Fatalf("seed add-dep: %v", err)
 	}
@@ -103,7 +103,7 @@ func TestAddDep_FieldModeRejectedOnRawTarget(t *testing.T) {
 
 func TestAddDep_RawModeRejectedOnFieldTarget(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
+	newTarget(t, "README", "field")
 	if _, _, err := execute(t, "add-dep", "README:version", "--format", "x", "a.toml:x"); err != nil {
 		t.Fatalf("seed add-dep: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestAddDep_RawModeRejectedOnFieldTarget(t *testing.T) {
 
 func TestAddDep_DuplicateRejected(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
+	newTarget(t, "README", "raw")
 	if _, _, err := execute(t, "add-dep", "README", "pyproject.toml"); err != nil {
 		t.Fatalf("seed add-dep: %v", err)
 	}

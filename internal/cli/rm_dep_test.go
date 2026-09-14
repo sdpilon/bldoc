@@ -7,7 +7,7 @@ import (
 
 func TestRmDep_Valid(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
+	newTarget(t, "README", "raw")
 	if _, _, err := execute(t, "add-dep", "README", "pyproject.toml"); err != nil {
 		t.Fatalf("seed add-dep: %v", err)
 	}
@@ -20,7 +20,7 @@ func TestRmDep_Valid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("show: %v", err)
 	}
-	if strings.TrimSpace(stdout) != "" {
+	if strings.Contains(stdout, "pyproject.toml") {
 		t.Fatalf("expected no dependencies remaining, got stdout=%q", stdout)
 	}
 }
@@ -49,7 +49,7 @@ func TestRmDep_UnknownTargetRejected(t *testing.T) {
 
 func TestRmDep_UnrecordedDependencyRejected(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
+	newTarget(t, "README", "raw")
 
 	_, stderr, err := execute(t, "rm-dep", "README", "other.toml")
 	if err == nil {

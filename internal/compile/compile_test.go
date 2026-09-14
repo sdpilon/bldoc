@@ -21,6 +21,35 @@ func TestTarget_EmptyDepsCompilesToEmptyRaw(t *testing.T) {
 	}
 }
 
+func TestTarget_EmptyDeclaredRawModeCompilesToEmptyRaw(t *testing.T) {
+	result, err := Target(manifest.Target{Name: "NOTES", Mode: "raw"})
+	if err != nil {
+		t.Fatalf("Target: %v", err)
+	}
+	if result.IsField {
+		t.Fatal("expected raw-mode result for an empty declared-raw target")
+	}
+	if len(result.Raw) != 0 {
+		t.Fatalf("expected empty raw bytes, got %q", result.Raw)
+	}
+}
+
+func TestTarget_EmptyDeclaredFieldModeCompilesToEmptyObject(t *testing.T) {
+	result, err := Target(manifest.Target{Name: "PROJECTS", Mode: "field"})
+	if err != nil {
+		t.Fatalf("Target: %v", err)
+	}
+	if !result.IsField {
+		t.Fatal("expected field-mode result for an empty declared-field target")
+	}
+	if result.Fields == nil {
+		t.Fatal("expected a non-nil empty Fields map (marshals to {}, not null)")
+	}
+	if len(result.Fields) != 0 {
+		t.Fatalf("expected no fields, got %+v", result.Fields)
+	}
+}
+
 func TestTarget_RawModeConcatenatesInOrder(t *testing.T) {
 	dir := t.TempDir()
 	aPath := filepath.Join(dir, "a.txt")

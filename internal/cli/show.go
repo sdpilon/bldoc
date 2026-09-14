@@ -24,12 +24,29 @@ func newShowCmd() *cobra.Command {
 			if err != nil {
 				return reportErr(cmd, err)
 			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "mode: "+resolveMode(target))
+			if target.Ext != "" {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "ext: "+target.Ext)
+			}
 			for _, dep := range target.Deps {
 				_, _ = fmt.Fprintln(cmd.OutOrStdout(), formatDep(dep))
 			}
 			return nil
 		},
 	}
+}
+
+// resolveMode returns t's declared mode if it has one, otherwise the
+// mode computed from its dependencies (matching the compile engine's own
+// inference for a target with no declared mode).
+func resolveMode(t manifest.Target) string {
+	if t.Mode != "" {
+		return t.Mode
+	}
+	if len(t.Deps) > 0 && t.Deps[0].Field != "" {
+		return "field"
+	}
+	return "raw"
 }
 
 // formatDep renders a dependency as "source[:path]" for a whole-file

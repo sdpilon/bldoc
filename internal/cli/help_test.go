@@ -10,7 +10,7 @@ func TestHelp_Root(t *testing.T) {
 }
 
 func TestHelp_EverySubcommand(t *testing.T) {
-	for _, name := range []string{"new", "add-dep", "rm-dep", "make", "rm", "show", "list"} {
+	for _, name := range []string{"new", "add-dep", "rm-dep", "make", "rm", "rename", "show", "list"} {
 		t.Run(name, func(t *testing.T) {
 			_, _, err := execute(t, name, "--help")
 			if err != nil {

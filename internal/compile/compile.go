@@ -24,11 +24,16 @@ type Result struct {
 }
 
 // Target compiles target into its intermediate. A target with no
-// dependencies compiles to an empty raw-mode result; otherwise its mode
-// is determined by whether its first dependency names a field, matching
-// the raw/field exclusivity the manifest already enforces.
+// dependencies compiles to an empty result matching its declared Mode
+// (field-mode targets get an empty JSON object; raw or undeclared get
+// empty raw bytes). A target with dependencies has its mode determined
+// by whether its first dependency names a field, matching the raw/field
+// exclusivity the manifest already enforces.
 func Target(target manifest.Target) (Result, error) {
 	if len(target.Deps) == 0 {
+		if target.Mode == "field" {
+			return Result{IsField: true, Fields: map[string]Field{}}, nil
+		}
 		return Result{Raw: []byte{}}, nil
 	}
 	if target.Deps[0].Field == "" {

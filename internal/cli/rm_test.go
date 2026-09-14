@@ -17,7 +17,7 @@ func TestRm_MissingTarget(t *testing.T) {
 
 func TestRm_ValidTarget(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
+	newTarget(t, "README", "raw")
 
 	if _, stderr, err := execute(t, "rm", "README"); err != nil {
 		t.Fatalf("rm: err=%v stderr=%q", err, stderr)

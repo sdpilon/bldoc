@@ -36,8 +36,8 @@ func TestList_NoTargets(t *testing.T) {
 
 func TestList_TargetsListed(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
-	newTarget(t, "CHANGELOG")
+	newTarget(t, "README", "raw")
+	newTarget(t, "CHANGELOG", "raw")
 
 	stdout, _, err := execute(t, "list")
 	if err != nil {

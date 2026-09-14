@@ -35,7 +35,7 @@ func TestMake_UnknownTargetRejected(t *testing.T) {
 
 func TestMake_ExplicitTarget_RawMode(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
+	newTarget(t, "README", "raw")
 	if err := os.WriteFile("a.txt", []byte("hello "), 0o644); err != nil {
 		t.Fatalf("WriteFile a.txt: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestMake_ExplicitTarget_RawMode(t *testing.T) {
 
 func TestMake_ExplicitTarget_FieldMode(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
+	newTarget(t, "README", "field")
 	if err := os.WriteFile("pyproject.toml", []byte("[project]\nrequires-python = \"3.11\"\n"), 0o644); err != nil {
 		t.Fatalf("WriteFile pyproject.toml: %v", err)
 	}
@@ -100,10 +100,76 @@ func TestMake_ExplicitTarget_FieldMode(t *testing.T) {
 	}
 }
 
+func TestMake_RawMode_ExtSuffixesOutputPath(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if _, _, err := execute(t, "new", "NOTES", "--mode", "raw", "--ext", "yaml"); err != nil {
+		t.Fatalf("new: %v", err)
+	}
+	if err := os.WriteFile("a.yaml", []byte("- a\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile a.yaml: %v", err)
+	}
+	if _, _, err := execute(t, "add-dep", "NOTES", "a.yaml"); err != nil {
+		t.Fatalf("add-dep: %v", err)
+	}
+
+	if _, stderr, err := execute(t, "make", "NOTES"); err != nil {
+		t.Fatalf("make: err=%v stderr=%q", err, stderr)
+	}
+
+	data, err := os.ReadFile(filepath.Join(".bldoc", "NOTES.yaml"))
+	if err != nil {
+		t.Fatalf("reading .bldoc/NOTES.yaml: %v", err)
+	}
+	if string(data) != "- a\n" {
+		t.Fatalf("expected %q, got %q", "- a\n", data)
+	}
+	if _, err := os.Stat(filepath.Join(".bldoc", "NOTES")); err == nil {
+		t.Fatal("expected no extensionless .bldoc/NOTES file to be written")
+	}
+}
+
+func TestMake_EmptyDeclaredFieldMode_CompilesToEmptyObject(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if _, _, err := execute(t, "new", "PROJECTS", "--mode", "field"); err != nil {
+		t.Fatalf("new: %v", err)
+	}
+
+	if _, stderr, err := execute(t, "make", "PROJECTS"); err != nil {
+		t.Fatalf("make: err=%v stderr=%q", err, stderr)
+	}
+
+	data, err := os.ReadFile(filepath.Join(".bldoc", "PROJECTS.json"))
+	if err != nil {
+		t.Fatalf("reading .bldoc/PROJECTS.json: %v", err)
+	}
+	if strings.TrimSpace(string(data)) != "{}" {
+		t.Fatalf("expected an empty JSON object, got %q", data)
+	}
+}
+
+func TestMake_FieldMode_OutputPathUnaffectedByExt(t *testing.T) {
+	t.Chdir(t.TempDir())
+	newTarget(t, "README", "field")
+	if err := os.WriteFile("pyproject.toml", []byte("[project]\nrequires-python = \"3.11\"\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile pyproject.toml: %v", err)
+	}
+	if _, _, err := execute(t, "add-dep", "README:version", "pyproject.toml:project.requires-python"); err != nil {
+		t.Fatalf("add-dep: %v", err)
+	}
+
+	if _, stderr, err := execute(t, "make", "README"); err != nil {
+		t.Fatalf("make: err=%v stderr=%q", err, stderr)
+	}
+
+	if _, err := os.Stat(filepath.Join(".bldoc", "README.json")); err != nil {
+		t.Fatalf("expected .bldoc/README.json to exist: %v", err)
+	}
+}
+
 func TestMake_NoTarget_CompilesAll(t *testing.T) {
 	t.Chdir(t.TempDir())
-	newTarget(t, "README")
-	newTarget(t, "CHANGELOG")
+	newTarget(t, "README", "raw")
+	newTarget(t, "CHANGELOG", "raw")
 	if err := os.WriteFile("a.txt", []byte("a"), 0o644); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}

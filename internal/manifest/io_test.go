@@ -34,6 +34,28 @@ func TestLoadSaveRoundTrip(t *testing.T) {
 	}
 }
 
+func TestLoadSaveRoundTrip_ModeAndExt(t *testing.T) {
+	path := filepath.Join(t.TempDir(), FileName)
+	want := &Manifest{
+		Targets: []Target{
+			{Name: "PROJECTS", Mode: "raw", Ext: "yaml", Deps: []Dep{{Source: "a.yaml"}}},
+			{Name: "README", Deps: []Dep{{Source: "pyproject.toml"}}},
+		},
+	}
+
+	if err := Save(path, want); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	got, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("round-trip mismatch:\n got: %+v\nwant: %+v", got, want)
+	}
+}
+
 func TestLoadMissingFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), FileName)
 

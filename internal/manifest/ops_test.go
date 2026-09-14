@@ -13,7 +13,7 @@ func TestAddTargetCreatesManifestFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if err := AddTarget(m, "README"); err != nil {
+	if err := AddTarget(m, "README", "", ""); err != nil {
 		t.Fatalf("AddTarget: %v", err)
 	}
 	if err := Save(path, m); err != nil {
@@ -35,11 +35,33 @@ func TestAddTargetCreatesManifestFile(t *testing.T) {
 func TestAddTargetRejectsDuplicate(t *testing.T) {
 	m := &Manifest{Targets: []Target{{Name: "README"}}}
 
-	if err := AddTarget(m, "README"); err == nil {
+	if err := AddTarget(m, "README", "", ""); err == nil {
 		t.Fatal("expected an error adding a duplicate target, got nil")
 	}
 	if len(m.Targets) != 1 {
 		t.Fatalf("expected manifest unchanged, got %+v", m.Targets)
+	}
+}
+
+func TestAddTargetRecordsModeAndExt(t *testing.T) {
+	m := &Manifest{}
+
+	if err := AddTarget(m, "PROJECTS", "raw", "yaml"); err != nil {
+		t.Fatalf("AddTarget: %v", err)
+	}
+	if got := m.Targets[0]; got.Mode != "raw" || got.Ext != "yaml" {
+		t.Fatalf("expected mode %q and ext %q, got %+v", "raw", "yaml", got)
+	}
+}
+
+func TestAddTargetNoModeOrExtByDefault(t *testing.T) {
+	m := &Manifest{}
+
+	if err := AddTarget(m, "README", "", ""); err != nil {
+		t.Fatalf("AddTarget: %v", err)
+	}
+	if got := m.Targets[0]; got.Mode != "" || got.Ext != "" {
+		t.Fatalf("expected no mode or ext, got %+v", got)
 	}
 }
 
@@ -101,6 +123,41 @@ func TestAddDepRejectsRawModeOnFieldTarget(t *testing.T) {
 	}
 	if len(m.Targets[0].Deps) != 1 {
 		t.Fatalf("expected manifest unchanged, got %+v", m.Targets[0].Deps)
+	}
+}
+
+func TestAddDepRejectsFieldModeAsFirstDepOnDeclaredRawTarget(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "PROJECTS", Mode: "raw"}}}
+
+	err := AddDep(m, "PROJECTS", Dep{Source: "entry.yaml", Path: "name", Field: "name"})
+	if err == nil {
+		t.Fatal("expected an error adding a field-addressed dep as the first dep of a declared raw-mode target, got nil")
+	}
+	if len(m.Targets[0].Deps) != 0 {
+		t.Fatalf("expected manifest unchanged, got %+v", m.Targets[0].Deps)
+	}
+}
+
+func TestAddDepRejectsRawModeAsFirstDepOnDeclaredFieldTarget(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "PROJECTS", Mode: "field"}}}
+
+	err := AddDep(m, "PROJECTS", Dep{Source: "entry.yaml"})
+	if err == nil {
+		t.Fatal("expected an error adding a whole-file dep as the first dep of a declared field-mode target, got nil")
+	}
+	if len(m.Targets[0].Deps) != 0 {
+		t.Fatalf("expected manifest unchanged, got %+v", m.Targets[0].Deps)
+	}
+}
+
+func TestAddDepMatchesDeclaredModeAccepted(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "PROJECTS", Mode: "field"}}}
+
+	if err := AddDep(m, "PROJECTS", Dep{Source: "entry.yaml", Path: "name", Field: "name"}); err != nil {
+		t.Fatalf("AddDep: %v", err)
+	}
+	if len(m.Targets[0].Deps) != 1 {
+		t.Fatalf("expected one dep recorded, got %+v", m.Targets[0].Deps)
 	}
 }
 
@@ -187,6 +244,48 @@ func TestListTargetsEmpty(t *testing.T) {
 	got := ListTargets(m)
 	if len(got) != 0 {
 		t.Fatalf("expected no targets, got %v", got)
+	}
+}
+
+func TestRenameTargetUnknownOld(t *testing.T) {
+	m := &Manifest{}
+
+	if err := RenameTarget(m, "MISSING", "NEW"); err == nil {
+		t.Fatal("expected an error renaming an unknown target, got nil")
+	}
+}
+
+func TestRenameTargetDuplicateNewRejected(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "README"}, {Name: "NOTES"}}}
+
+	if err := RenameTarget(m, "README", "NOTES"); err == nil {
+		t.Fatal("expected an error renaming onto an existing target name, got nil")
+	}
+	if m.Targets[0].Name != "README" || m.Targets[1].Name != "NOTES" {
+		t.Fatalf("expected manifest unchanged, got %+v", m.Targets)
+	}
+}
+
+func TestRenameTargetPreservesDepsOrderModeExt(t *testing.T) {
+	m := &Manifest{Targets: []Target{{
+		Name: "PROJECTS",
+		Mode: "raw",
+		Ext:  "yaml",
+		Deps: []Dep{{Source: "a.yaml"}, {Source: "b.yaml"}},
+	}}}
+
+	if err := RenameTarget(m, "PROJECTS", "REGISTRY"); err != nil {
+		t.Fatalf("RenameTarget: %v", err)
+	}
+	if len(m.Targets) != 1 {
+		t.Fatalf("expected exactly one target, got %+v", m.Targets)
+	}
+	got := m.Targets[0]
+	if got.Name != "REGISTRY" || got.Mode != "raw" || got.Ext != "yaml" {
+		t.Fatalf("expected renamed target with mode/ext preserved, got %+v", got)
+	}
+	if len(got.Deps) != 2 || got.Deps[0].Source != "a.yaml" || got.Deps[1].Source != "b.yaml" {
+		t.Fatalf("expected deps preserved in order, got %+v", got.Deps)
 	}
 }
 

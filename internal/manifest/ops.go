@@ -11,13 +11,16 @@ func findTargetIndex(m *Manifest, name string) (int, error) {
 	return -1, fmt.Errorf("target %q not found", name)
 }
 
-// AddTarget records a new target named name. It rejects a name that
-// already exists.
-func AddTarget(m *Manifest, name string) error {
+// AddTarget records a new target named name, with the given mode ("raw",
+// "field", or "" for no declared mode) and ext (meaningful for "raw"
+// only; "" for none). It rejects a name that already exists. Callers are
+// responsible for validating mode and the mode/ext combination before
+// calling this — AddTarget stores whatever it's given.
+func AddTarget(m *Manifest, name, mode, ext string) error {
 	if _, err := findTargetIndex(m, name); err == nil {
 		return fmt.Errorf("target %q already exists", name)
 	}
-	m.Targets = append(m.Targets, Target{Name: name})
+	m.Targets = append(m.Targets, Target{Name: name, Mode: mode, Ext: ext})
 	return nil
 }
 
@@ -53,9 +56,12 @@ func ShowTarget(m *Manifest, name string) (Target, error) {
 }
 
 // AddDep appends dep to target's recorded dependencies. It rejects an
-// unknown target, a dep whose field-addressing (dep.Field set or not)
-// doesn't match every dependency the target already has, and a dep
-// whose (Source, Path) pair is already recorded on the target.
+// unknown target and a dep whose (Source, Path) pair is already recorded
+// on the target. For mode-exclusivity: a target with a declared Mode
+// rejects any dependency (including the first) whose field-addressing
+// doesn't match that mode; a target with no declared Mode rejects a dep
+// whose field-addressing doesn't match every dependency it already has,
+// once it has at least one.
 func AddDep(m *Manifest, target string, dep Dep) error {
 	idx, err := findTargetIndex(m, target)
 	if err != nil {
@@ -63,9 +69,13 @@ func AddDep(m *Manifest, target string, dep Dep) error {
 	}
 	t := &m.Targets[idx]
 
-	if len(t.Deps) > 0 {
+	newFieldMode := dep.Field != ""
+	if t.Mode != "" {
+		if wantField := t.Mode == "field"; wantField != newFieldMode {
+			return fmt.Errorf("target %q is declared mode %q, which doesn't accept this dependency's field-addressing", target, t.Mode)
+		}
+	} else if len(t.Deps) > 0 {
 		existingFieldMode := t.Deps[0].Field != ""
-		newFieldMode := dep.Field != ""
 		if existingFieldMode != newFieldMode {
 			return fmt.Errorf("target %q mixes raw and field-mode dependencies", target)
 		}
@@ -78,6 +88,22 @@ func AddDep(m *Manifest, target string, dep Dep) error {
 	}
 
 	t.Deps = append(t.Deps, dep)
+	return nil
+}
+
+// RenameTarget renames the target named oldName to newName, preserving
+// its recorded dependencies, their order, its declared Mode, and its
+// Ext unchanged. It rejects an oldName that does not exist and a newName
+// that already names a target.
+func RenameTarget(m *Manifest, oldName, newName string) error {
+	idx, err := findTargetIndex(m, oldName)
+	if err != nil {
+		return err
+	}
+	if _, err := findTargetIndex(m, newName); err == nil {
+		return fmt.Errorf("target %q already exists", newName)
+	}
+	m.Targets[idx].Name = newName
 	return nil
 }
 

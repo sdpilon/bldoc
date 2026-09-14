@@ -7,10 +7,16 @@ type Manifest struct {
 	Targets []Target `toml:"target"`
 }
 
-// Target is one entry in the manifest: a name and its ordered list of
-// dependencies.
+// Target is one entry in the manifest: a name, its ordered list of
+// dependencies, and optionally a declared Mode ("raw" or "field") and,
+// for a raw-mode target, an output Ext. Mode is empty for a target
+// created before this capability existed (or hand-authored without it),
+// in which case its mode is inferred from its dependencies instead. Ext
+// is only ever set together with Mode "raw".
 type Target struct {
 	Name string `toml:"name"`
+	Mode string `toml:"mode,omitempty"`
+	Ext  string `toml:"ext,omitempty"`
 	Deps []Dep  `toml:"dep"`
 }
 

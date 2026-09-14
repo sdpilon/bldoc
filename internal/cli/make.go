@@ -49,8 +49,8 @@ func newMakeCmd() *cobra.Command {
 }
 
 // compileTarget compiles t and writes its intermediate under
-// intermediateDir: "<name>" for a raw-mode result, "<name>.json" for a
-// field-mode one.
+// intermediateDir: "<name>" (or "<name>.<ext>" if t.Ext is set) for a
+// raw-mode result, "<name>.json" for a field-mode one.
 func compileTarget(t manifest.Target) error {
 	result, err := compile.Target(t)
 	if err != nil {
@@ -72,7 +72,11 @@ func compileTarget(t manifest.Target) error {
 		return nil
 	}
 
-	path := filepath.Join(intermediateDir, t.Name)
+	name := t.Name
+	if t.Ext != "" {
+		name += "." + t.Ext
+	}
+	path := filepath.Join(intermediateDir, name)
 	if err := os.WriteFile(path, result.Raw, 0o644); err != nil {
 		return fmt.Errorf("writing %s: %w", path, err)
 	}

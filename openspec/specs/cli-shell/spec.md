@@ -33,7 +33,7 @@ argument SHALL be rejected as an unknown command.
 - **THEN** the CLI accepts the argument and records a new target named `README` in the manifest (see the `manifest-store` capability)
 
 ### Requirement: `new` requires a `--mode` flag
-`new` SHALL require a `--mode` flag whose value is `raw` or `field`, in addition to its positional target name.
+`new` SHALL require a `--mode` flag whose value is `raw`, `field`, or `list`, in addition to its positional target name.
 
 #### Scenario: Missing mode flag
 - **WHEN** the user runs `bldoc new README` with no `--mode` flag
@@ -47,16 +47,24 @@ argument SHALL be rejected as an unknown command.
 - **WHEN** the user runs `bldoc new PROJECTS --mode field`
 - **THEN** the CLI parses `PROJECTS` as the target name and `field` as the mode (see the `manifest-store` capability)
 
-### Requirement: `--ext` requires `--mode raw`
-`new` SHALL accept an optional `--ext <ext>` flag, and SHALL reject it when given together with `--mode field`.
+#### Scenario: Valid list mode flag
+- **WHEN** the user runs `bldoc new PROJECTS --mode list`
+- **THEN** the CLI parses `PROJECTS` as the target name and `list` as the mode (see the `manifest-store` capability)
 
-#### Scenario: Extension rejected with field mode
-- **WHEN** the user runs `bldoc new PROJECTS --mode field --ext yaml`
-- **THEN** the CLI reports a usage error and exits non-zero
+### Requirement: `--ext` is accepted with any mode
+`new` SHALL accept an optional `--ext <ext>` flag regardless of the declared `--mode`.
 
 #### Scenario: Extension accepted with raw mode
 - **WHEN** the user runs `bldoc new PROJECTS --mode raw --ext yaml`
 - **THEN** the CLI parses `PROJECTS` as the target name, `raw` as the mode, and `yaml` as the extension, and records all three (see the `manifest-store` capability)
+
+#### Scenario: Extension accepted with field mode
+- **WHEN** the user runs `bldoc new PROJECTS --mode field --ext yaml`
+- **THEN** the CLI parses `PROJECTS` as the target name, `field` as the mode, and `yaml` as the extension, and records all three (see the `manifest-store` capability)
+
+#### Scenario: Extension accepted with list mode
+- **WHEN** the user runs `bldoc new PROJECTS --mode list --ext yaml`
+- **THEN** the CLI parses `PROJECTS` as the target name, `list` as the mode, and `yaml` as the extension, and records all three (see the `manifest-store` capability)
 
 ### Requirement: `add-dep` parses target-ref, source-ref, and optional format
 `add-dep` SHALL require a target-ref, a source-ref, and accept an

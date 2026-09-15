@@ -161,6 +161,75 @@ func TestAddDepMatchesDeclaredModeAccepted(t *testing.T) {
 	}
 }
 
+func TestAddDepRejectsBareRefOnListModeTarget(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "PROJECTS", Mode: "list"}}}
+
+	err := AddDep(m, "PROJECTS", Dep{Source: "entry.yaml"})
+	if err == nil {
+		t.Fatal("expected an error adding a bare (non-record-scoped) dep to a list-mode target, got nil")
+	}
+	if len(m.Targets[0].Deps) != 0 {
+		t.Fatalf("expected manifest unchanged, got %+v", m.Targets[0].Deps)
+	}
+}
+
+func TestAddDepAcceptsRecordOnlyOnListModeTarget(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "PROJECTS", Mode: "list"}}}
+
+	if err := AddDep(m, "PROJECTS", Dep{Source: "project-headers/bldoc.yaml", Field: "bldoc"}); err != nil {
+		t.Fatalf("AddDep: %v", err)
+	}
+	if len(m.Targets[0].Deps) != 1 || m.Targets[0].Deps[0].Field != "bldoc" {
+		t.Fatalf("expected record-only dep recorded, got %+v", m.Targets[0].Deps)
+	}
+}
+
+func TestAddDepAcceptsRecordFieldOnListModeTarget(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "PROJECTS", Mode: "list"}}}
+
+	if err := AddDep(m, "PROJECTS", Dep{Source: "entry-description.md", Field: "bldoc.description"}); err != nil {
+		t.Fatalf("AddDep: %v", err)
+	}
+	if len(m.Targets[0].Deps) != 1 || m.Targets[0].Deps[0].Field != "bldoc.description" {
+		t.Fatalf("expected record.field dep recorded, got %+v", m.Targets[0].Deps)
+	}
+}
+
+func TestAddDepRejectsOverQualifiedFieldOnListModeTarget(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "PROJECTS", Mode: "list"}}}
+
+	err := AddDep(m, "PROJECTS", Dep{Source: "entry-description.md", Field: "bldoc.description.extra"})
+	if err == nil {
+		t.Fatal("expected an error adding an over-qualified field to a list-mode target, got nil")
+	}
+	if len(m.Targets[0].Deps) != 0 {
+		t.Fatalf("expected manifest unchanged, got %+v", m.Targets[0].Deps)
+	}
+}
+
+func TestAddDepRejectsFormatOnRecordOnlyDep(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "PROJECTS", Mode: "list"}}}
+
+	err := AddDep(m, "PROJECTS", Dep{Source: "project-headers/bldoc.yaml", Field: "bldoc", Format: "%s"})
+	if err == nil {
+		t.Fatal("expected an error adding --format to a record-only dep, got nil")
+	}
+	if len(m.Targets[0].Deps) != 0 {
+		t.Fatalf("expected manifest unchanged, got %+v", m.Targets[0].Deps)
+	}
+}
+
+func TestAddDepAcceptsFormatOnRecordFieldDep(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "PROJECTS", Mode: "list"}}}
+
+	if err := AddDep(m, "PROJECTS", Dep{Source: "version.txt", Field: "bldoc.version", Format: "v%s"}); err != nil {
+		t.Fatalf("AddDep: %v", err)
+	}
+	if len(m.Targets[0].Deps) != 1 {
+		t.Fatalf("expected one dep recorded, got %+v", m.Targets[0].Deps)
+	}
+}
+
 func TestAddDepRejectsDuplicate(t *testing.T) {
 	m := &Manifest{Targets: []Target{{Name: "README", Deps: []Dep{{Source: "pyproject.toml"}}}}}
 

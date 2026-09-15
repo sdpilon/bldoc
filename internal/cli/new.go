@@ -18,11 +18,8 @@ func newNewCmd() *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if mode != "raw" && mode != "field" {
-				return reportErr(cmd, fmt.Errorf("--mode is required and must be \"raw\" or \"field\" (got %q)", mode))
-			}
-			if ext != "" && mode != "raw" {
-				return reportErr(cmd, fmt.Errorf("--ext requires --mode raw"))
+			if mode != "raw" && mode != "field" && mode != "list" {
+				return reportErr(cmd, fmt.Errorf("--mode is required and must be \"raw\", \"field\", or \"list\" (got %q)", mode))
 			}
 
 			m, err := manifest.Load(manifest.FileName)
@@ -38,7 +35,7 @@ func newNewCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&mode, "mode", "", "target mode: raw or field (required)")
-	cmd.Flags().StringVar(&ext, "ext", "", "output file extension (raw mode only)")
+	cmd.Flags().StringVar(&mode, "mode", "", "target mode: raw, field, or list (required)")
+	cmd.Flags().StringVar(&ext, "ext", "", "output file extension")
 	return cmd
 }

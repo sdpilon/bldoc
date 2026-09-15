@@ -23,7 +23,7 @@ this project:
 
 - `cli` — command surface / argument parsing
 - `manifest` — manifest file format, read/write
-- `compile` — the `make` compile engine (raw mode / field mode)
+- `compile` — the `make` compile engine (raw mode / field mode / list mode)
 - `build` — module/dependency/tooling setup
 - `openspec` — OpenSpec change artifacts themselves (proposal/design/specs/tasks)
 - `docs` — README and other non-OpenSpec repo docs

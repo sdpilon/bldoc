@@ -102,3 +102,27 @@ func TestResolveFieldPath_NonScalarArray(t *testing.T) {
 		t.Fatal("expected an error resolving a field-path to an array")
 	}
 }
+
+func TestRequireFlatScalarDoc_Accepted(t *testing.T) {
+	doc := map[string]interface{}{"name": "bldoc", "path": "~/Projects/_Claude/bldoc", "count": 3.0, "ok": true}
+
+	if err := requireFlatScalarDoc(doc); err != nil {
+		t.Fatalf("expected an all-scalar document to be accepted, got %v", err)
+	}
+}
+
+func TestRequireFlatScalarDoc_RejectsNestedTable(t *testing.T) {
+	doc := map[string]interface{}{"name": "bldoc", "nested": map[string]interface{}{"x": "y"}}
+
+	if err := requireFlatScalarDoc(doc); err == nil {
+		t.Fatal("expected an error for a document with a nested table value")
+	}
+}
+
+func TestRequireFlatScalarDoc_RejectsArray(t *testing.T) {
+	doc := map[string]interface{}{"name": "bldoc", "items": []interface{}{"a", "b"}}
+
+	if err := requireFlatScalarDoc(doc); err == nil {
+		t.Fatal("expected an error for a document with an array value")
+	}
+}

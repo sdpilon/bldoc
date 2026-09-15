@@ -1,3 +1,10 @@
 CLAUDE.local.md
 /bldoc
 /dist
+
+# Local dogfooding scaffolding consumed by ~/.claude/bldoc.toml's PROJECTS
+# target (compiled to ~/.claude/.bldoc/PROJECTS.yaml, replacing the old
+# hand-maintained ~/.claude/PROJECTS.md). Not part of this repo's own
+# build until a local target (e.g. README) consumes entry-description.md
+# too — see bldoc's per-project memory for the full rationale.
+/entry-description.md

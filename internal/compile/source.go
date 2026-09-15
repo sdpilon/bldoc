@@ -60,10 +60,31 @@ func resolveFieldPath(tree map[string]interface{}, path string) (interface{}, er
 		cur = v
 	}
 
-	switch cur.(type) {
-	case map[string]interface{}, []interface{}:
+	if !isScalar(cur) {
 		return nil, fmt.Errorf("field-path %q resolves to a table or array, not a scalar value", path)
-	default:
-		return cur, nil
 	}
+	return cur, nil
+}
+
+// isScalar reports whether v is a string, number, or boolean — i.e. not
+// a nested table/object or array/list.
+func isScalar(v interface{}) bool {
+	switch v.(type) {
+	case map[string]interface{}, []interface{}:
+		return false
+	default:
+		return true
+	}
+}
+
+// requireFlatScalarDoc rejects a parsed document with any top-level
+// value that is not a scalar (a nested table/object or array/list),
+// returning the first offending key found.
+func requireFlatScalarDoc(doc map[string]interface{}) error {
+	for key, v := range doc {
+		if !isScalar(v) {
+			return fmt.Errorf("key %q resolves to a table or array, not a scalar value", key)
+		}
+	}
+	return nil
 }

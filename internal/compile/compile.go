@@ -59,11 +59,21 @@ func Target(target manifest.Target) (Result, error) {
 	return Result{IsField: true, Fields: fields}, nil
 }
 
-// compileRaw concatenates target's whole-file dependencies' bytes, in
-// the order they were added.
+// compileRaw concatenates target's whole-file dependencies' resolved
+// content, in the order they were added — a dependency's source file in
+// full, or, if it carries an anchor, that anchor's resolved Markdown
+// section content.
 func compileRaw(target manifest.Target) ([]byte, error) {
 	var buf bytes.Buffer
 	for _, dep := range target.Deps {
+		if dep.Anchor != "" {
+			content, err := ResolveMarkdownAnchor(dep.Source, dep.Anchor, dep.Nested)
+			if err != nil {
+				return nil, err
+			}
+			buf.WriteString(content)
+			continue
+		}
 		data, err := os.ReadFile(dep.Source)
 		if err != nil {
 			return nil, fmt.Errorf("reading %s: %w", dep.Source, err)
@@ -182,6 +192,9 @@ func checkDuplicateFields(target manifest.Target) error {
 // file's content when dep has no field-path, or the field-path's
 // resolved scalar value when it does.
 func resolveDepValue(dep manifest.Dep) (string, error) {
+	if dep.Anchor != "" {
+		return ResolveMarkdownAnchor(dep.Source, dep.Anchor, dep.Nested)
+	}
 	if dep.Path == "" {
 		data, err := os.ReadFile(dep.Source)
 		if err != nil {

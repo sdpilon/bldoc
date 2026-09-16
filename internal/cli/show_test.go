@@ -92,6 +92,38 @@ func TestShow_ExtensionShown(t *testing.T) {
 	}
 }
 
+func TestShow_AnchorDependencyShown(t *testing.T) {
+	t.Chdir(t.TempDir())
+	newTarget(t, "README", "field")
+	if _, _, err := execute(t, "add-dep", "README:summary", "spec.md#purpose"); err != nil {
+		t.Fatalf("add-dep: %v", err)
+	}
+
+	stdout, _, err := execute(t, "show", "README")
+	if err != nil {
+		t.Fatalf("show: %v", err)
+	}
+	if !strings.Contains(stdout, "summary <- spec.md#purpose") {
+		t.Fatalf("expected anchor dependency shown, got stdout=%q", stdout)
+	}
+}
+
+func TestShow_NestedAnchorDependencyShown(t *testing.T) {
+	t.Chdir(t.TempDir())
+	newTarget(t, "README", "field")
+	if _, _, err := execute(t, "add-dep", "README:section", "spec.md#requirements", "--nested"); err != nil {
+		t.Fatalf("add-dep: %v", err)
+	}
+
+	stdout, _, err := execute(t, "show", "README")
+	if err != nil {
+		t.Fatalf("show: %v", err)
+	}
+	if !strings.Contains(stdout, "spec.md#requirements") || !strings.Contains(stdout, "(nested)") {
+		t.Fatalf("expected anchor and nested flag shown, got stdout=%q", stdout)
+	}
+}
+
 func TestShow_NoExtensionNotShown(t *testing.T) {
 	t.Chdir(t.TempDir())
 	newTarget(t, "README", "raw")

@@ -4,6 +4,7 @@ package cli
 
 import (
 	"fmt"
+	"runtime/debug"
 
 	"github.com/spf13/cobra"
 )
@@ -16,9 +17,10 @@ var version = "0.0.0-dev"
 // NewRootCmd builds the bldoc root command with every subcommand
 // attached.
 func NewRootCmd() *cobra.Command {
+	info, _ := debug.ReadBuildInfo()
 	root := &cobra.Command{
 		Use:     "bldoc",
-		Version: version,
+		Version: buildVersion(version, info),
 	}
 	root.AddCommand(newNewCmd())
 	root.AddCommand(newAddDepCmd())
@@ -29,6 +31,47 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newShowCmd())
 	root.AddCommand(newListCmd())
 	return root
+}
+
+// buildVersion enriches version with embedded VCS build info from info
+// (commit short SHA, commit time, and a "modified" flag) when info
+// carries a "vcs.revision" setting — the same information `go version
+// -m <binary>` reports. It returns version unchanged when info is nil
+// or carries no "vcs.revision" setting (e.g. built with
+// -buildvcs=false, or from a source tree with no VCS present).
+func buildVersion(version string, info *debug.BuildInfo) string {
+	if info == nil {
+		return version
+	}
+
+	var revision, vcsTime string
+	modified := false
+	for _, s := range info.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			revision = s.Value
+		case "vcs.time":
+			vcsTime = s.Value
+		case "vcs.modified":
+			modified = s.Value == "true"
+		}
+	}
+	if revision == "" {
+		return version
+	}
+
+	short := revision
+	if len(short) > 12 {
+		short = short[:12]
+	}
+	detail := "commit " + short
+	if vcsTime != "" {
+		detail += ", " + vcsTime
+	}
+	if modified {
+		detail += ", modified"
+	}
+	return fmt.Sprintf("%s (%s)", version, detail)
 }
 
 // reportErr prints err to the command's stderr in the standard "bldoc

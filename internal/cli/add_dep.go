@@ -2,14 +2,17 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
+	"bldoc/internal/compile"
 	"bldoc/internal/manifest"
 )
 
 func newAddDepCmd() *cobra.Command {
 	var format string
+	var nested bool
 	cmd := &cobra.Command{
 		Use:           "add-dep <target-ref> <source-ref>",
 		Short:         "Declare a dependency on a target",
@@ -28,6 +31,14 @@ func newAddDepCmd() *cobra.Command {
 			if format != "" && targetRef.Field == "" {
 				return reportErr(cmd, fmt.Errorf("--format requires a target-ref with a :field (got %q)", args[0]))
 			}
+			if nested && sourceRef.Anchor == "" {
+				return reportErr(cmd, fmt.Errorf("--nested requires a source-ref with a '#anchor' (got %q)", args[1]))
+			}
+			if nested && targetRef.Field == "" {
+				return reportErr(cmd, fmt.Errorf("--nested requires a target-ref with a :field (got %q)", args[0]))
+			}
+
+			warnAmbiguousAnchor(cmd, sourceRef)
 
 			m, err := manifest.Load(manifest.FileName)
 			if err != nil {
@@ -36,6 +47,8 @@ func newAddDepCmd() *cobra.Command {
 			dep := manifest.Dep{
 				Source: sourceRef.Source,
 				Path:   sourceRef.Path,
+				Anchor: sourceRef.Anchor,
+				Nested: nested,
 				Field:  targetRef.Field,
 				Format: format,
 			}
@@ -49,5 +62,24 @@ func newAddDepCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&format, "format", "", "template used to render the field's value")
+	cmd.Flags().BoolVar(&nested, "nested", false, "include the anchor's nested subsections")
 	return cmd
+}
+
+// warnAmbiguousAnchor is a best-effort check: for a plain (non-
+// breadcrumb) anchor, it reads sourceRef's source file and prints a
+// non-blocking warning to cmd's error output if the anchor matches more
+// than one heading. A breadcrumb anchor is never checked (it already
+// names a specific heading), and any error reading or parsing the
+// source file is ignored — add-dep never requires a source file to
+// exist, and this check is advisory only.
+func warnAmbiguousAnchor(cmd *cobra.Command, sourceRef SourceRef) {
+	if sourceRef.Anchor == "" || strings.Contains(sourceRef.Anchor, "/") {
+		return
+	}
+	suggestions, err := compile.AmbiguousAnchorSuggestions(sourceRef.Source, sourceRef.Anchor)
+	if err != nil || len(suggestions) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: anchor %q matches %d headings; disambiguate with a breadcrumb path, e.g. %q\n", sourceRef.Anchor, len(suggestions), suggestions[0])
 }

@@ -241,10 +241,36 @@ func TestAddDepRejectsDuplicate(t *testing.T) {
 	}
 }
 
+func TestAddDepRejectsDuplicateAnchorRegardlessOfNested(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "README", Deps: []Dep{
+		{Source: "spec.md", Anchor: "requirements", Field: "section"},
+	}}}}
+
+	if err := AddDep(m, "README", Dep{Source: "spec.md", Anchor: "requirements", Field: "section", Nested: true}); err == nil {
+		t.Fatal("expected an error adding a duplicate anchor dependency that only differs by --nested, got nil")
+	}
+	if len(m.Targets[0].Deps) != 1 {
+		t.Fatalf("expected manifest unchanged, got %+v", m.Targets[0].Deps)
+	}
+}
+
+func TestAddDepAcceptsDifferentAnchorsOnSameSource(t *testing.T) {
+	m := &Manifest{Targets: []Target{{Name: "README", Deps: []Dep{
+		{Source: "spec.md", Anchor: "purpose", Field: "a"},
+	}}}}
+
+	if err := AddDep(m, "README", Dep{Source: "spec.md", Anchor: "requirements", Field: "b"}); err != nil {
+		t.Fatalf("expected a different anchor on the same source to be accepted, got %v", err)
+	}
+	if len(m.Targets[0].Deps) != 2 {
+		t.Fatalf("expected both dependencies recorded, got %+v", m.Targets[0].Deps)
+	}
+}
+
 func TestRemoveDepUnknownTarget(t *testing.T) {
 	m := &Manifest{}
 
-	if err := RemoveDep(m, "MISSING", "pyproject.toml", ""); err == nil {
+	if err := RemoveDep(m, "MISSING", "pyproject.toml", "", ""); err == nil {
 		t.Fatal("expected an error removing a dep from an unknown target, got nil")
 	}
 }
@@ -252,7 +278,7 @@ func TestRemoveDepUnknownTarget(t *testing.T) {
 func TestRemoveDepUnrecorded(t *testing.T) {
 	m := &Manifest{Targets: []Target{{Name: "README"}}}
 
-	if err := RemoveDep(m, "README", "other.toml", ""); err == nil {
+	if err := RemoveDep(m, "README", "other.toml", "", ""); err == nil {
 		t.Fatal("expected an error removing an unrecorded dependency, got nil")
 	}
 }
@@ -267,12 +293,30 @@ func TestRemoveDepPreservesOrder(t *testing.T) {
 		},
 	}}}
 
-	if err := RemoveDep(m, "README", "b.toml", ""); err != nil {
+	if err := RemoveDep(m, "README", "b.toml", "", ""); err != nil {
 		t.Fatalf("RemoveDep: %v", err)
 	}
 	got := m.Targets[0].Deps
 	if len(got) != 2 || got[0].Source != "a.toml" || got[1].Source != "c.toml" {
 		t.Fatalf("expected [a.toml, c.toml] preserving order, got %+v", got)
+	}
+}
+
+func TestRemoveDepMatchesByAnchor(t *testing.T) {
+	m := &Manifest{Targets: []Target{{
+		Name: "README",
+		Deps: []Dep{
+			{Source: "spec.md", Anchor: "purpose", Field: "a"},
+			{Source: "spec.md", Anchor: "requirements", Field: "b"},
+		},
+	}}}
+
+	if err := RemoveDep(m, "README", "spec.md", "", "purpose"); err != nil {
+		t.Fatalf("RemoveDep: %v", err)
+	}
+	got := m.Targets[0].Deps
+	if len(got) != 1 || got[0].Anchor != "requirements" {
+		t.Fatalf("expected only the requirements-anchor dependency to remain, got %+v", got)
 	}
 }
 

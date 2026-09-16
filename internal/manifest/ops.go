@@ -96,7 +96,7 @@ func AddDep(m *Manifest, target string, dep Dep) error {
 	}
 
 	for _, d := range t.Deps {
-		if d.Source == dep.Source && d.Path == dep.Path {
+		if d.Source == dep.Source && d.Path == dep.Path && d.Anchor == dep.Anchor {
 			return fmt.Errorf("dependency %q already recorded on target %q", dep.Source, target)
 		}
 	}
@@ -121,10 +121,11 @@ func RenameTarget(m *Manifest, oldName, newName string) error {
 	return nil
 }
 
-// RemoveDep removes the dependency matching (source, path) from
+// RemoveDep removes the dependency matching (source, path, anchor) from
 // target's recorded dependencies, preserving the order of the rest. It
-// rejects an unknown target and a (source, path) not recorded on it.
-func RemoveDep(m *Manifest, target, source, path string) error {
+// rejects an unknown target and a (source, path, anchor) not recorded on
+// it.
+func RemoveDep(m *Manifest, target, source, path, anchor string) error {
 	idx, err := findTargetIndex(m, target)
 	if err != nil {
 		return err
@@ -132,7 +133,7 @@ func RemoveDep(m *Manifest, target, source, path string) error {
 	t := &m.Targets[idx]
 
 	for i, d := range t.Deps {
-		if d.Source == source && d.Path == path {
+		if d.Source == source && d.Path == path && d.Anchor == anchor {
 			t.Deps = append(t.Deps[:i], t.Deps[i+1:]...)
 			return nil
 		}

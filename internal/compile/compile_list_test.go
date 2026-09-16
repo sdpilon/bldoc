@@ -3,6 +3,7 @@ package compile
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"bldoc/internal/manifest"
@@ -65,6 +66,29 @@ func TestTarget_ListModeResolvesRecordField(t *testing.T) {
 	record := result.Records["bldoc"]
 	if record["description"] != "a Go CLI tool" {
 		t.Fatalf("expected description field, got %+v", record)
+	}
+}
+
+func TestTarget_ListModeResolvesRecordFieldAnchor(t *testing.T) {
+	dir := t.TempDir()
+	specPath := filepath.Join(dir, "spec.md")
+	if err := os.WriteFile(specPath, []byte("# Title\n\n## Purpose\n\na Go CLI tool\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	target := manifest.Target{
+		Name: "PROJECTS",
+		Mode: "list",
+		Deps: []manifest.Dep{{Source: specPath, Anchor: "purpose", Field: "bldoc.description"}},
+	}
+	result, err := Target(target)
+	if err != nil {
+		t.Fatalf("Target: %v", err)
+	}
+	record := result.Records["bldoc"]
+	got, _ := record["description"].(string)
+	if !strings.Contains(got, "a Go CLI tool") {
+		t.Fatalf("expected description field from the anchor's section, got %+v", record)
 	}
 }
 

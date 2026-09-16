@@ -20,13 +20,18 @@ type Target struct {
 	Deps []Dep  `toml:"dep"`
 }
 
-// Dep is one dependency recorded on a target: a source ref (Source,
-// optional Path into its structured content) and, for a field-mode
-// dependency, the target-side Field name and optional Format template.
-// Field is empty for a whole-file (raw-mode) dependency.
+// Dep is one dependency recorded on a target: a source ref (Source, and
+// at most one of Path into its structured content or Anchor into one of
+// its Markdown headings) and, for a field-mode dependency, the
+// target-side Field name and optional Format template. Field is empty
+// for a whole-file (raw-mode) dependency. Nested is only meaningful
+// alongside Anchor: it expands section capture to include the matched
+// heading's nested subsections.
 type Dep struct {
 	Source string `toml:"source"`
 	Path   string `toml:"path,omitempty"`
+	Anchor string `toml:"anchor,omitempty"`
+	Nested bool   `toml:"nested,omitempty"`
 	Field  string `toml:"field,omitempty"`
 	Format string `toml:"format,omitempty"`
 }

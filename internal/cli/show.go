@@ -49,19 +49,26 @@ func resolveMode(t manifest.Target) string {
 	return "raw"
 }
 
-// formatDep renders a dependency as "source[:path]" for a whole-file
-// dependency, or "field <- source[:path] (format: \"...\")" for a
-// field-addressed one.
+// formatDep renders a dependency as "source[:path|#anchor]" for a
+// whole-file dependency, or "field <- source[:path|#anchor] [(nested)]
+// [(format: \"...\")]" for a field-addressed one.
 func formatDep(d manifest.Dep) string {
 	source := d.Source
-	if d.Path != "" {
+	switch {
+	case d.Path != "":
 		source = source + ":" + d.Path
+	case d.Anchor != "":
+		source = source + "#" + d.Anchor
 	}
 	if d.Field == "" {
 		return source
 	}
-	if d.Format != "" {
-		return fmt.Sprintf("%s <- %s (format: %q)", d.Field, source, d.Format)
+	result := fmt.Sprintf("%s <- %s", d.Field, source)
+	if d.Nested {
+		result += " (nested)"
 	}
-	return fmt.Sprintf("%s <- %s", d.Field, source)
+	if d.Format != "" {
+		result += fmt.Sprintf(" (format: %q)", d.Format)
+	}
+	return result
 }

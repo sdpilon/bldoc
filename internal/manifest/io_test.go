@@ -34,6 +34,33 @@ func TestLoadSaveRoundTrip(t *testing.T) {
 	}
 }
 
+func TestLoadSaveRoundTrip_AnchorAndNested(t *testing.T) {
+	path := filepath.Join(t.TempDir(), FileName)
+	want := &Manifest{
+		Targets: []Target{
+			{
+				Name: "README",
+				Deps: []Dep{
+					{Source: "spec.md", Anchor: "purpose", Field: "summary"},
+					{Source: "spec.md", Anchor: "requirements", Nested: true, Field: "section"},
+				},
+			},
+		},
+	}
+
+	if err := Save(path, want); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	got, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("round-trip mismatch:\n got: %+v\nwant: %+v", got, want)
+	}
+}
+
 func TestLoadSaveRoundTrip_ModeAndExt(t *testing.T) {
 	path := filepath.Join(t.TempDir(), FileName)
 	want := &Manifest{

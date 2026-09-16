@@ -3,6 +3,7 @@ package compile
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"bldoc/internal/manifest"
@@ -101,6 +102,97 @@ func TestTarget_FieldModeWholeFile(t *testing.T) {
 	}
 	if f.Value != "some notes" || f.Raw != "some notes" {
 		t.Fatalf("expected value==raw==%q, got %+v", "some notes", f)
+	}
+}
+
+func TestTarget_RawModeAnchor(t *testing.T) {
+	dir := t.TempDir()
+	specPath := filepath.Join(dir, "spec.md")
+	if err := os.WriteFile(specPath, []byte("# Title\n\n## Purpose\n\nPurpose text.\n\n## Requirements\n\nreqs\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	target := manifest.Target{
+		Name: "README",
+		Deps: []manifest.Dep{{Source: specPath, Anchor: "purpose"}},
+	}
+	result, err := Target(target)
+	if err != nil {
+		t.Fatalf("Target: %v", err)
+	}
+	if result.IsField {
+		t.Fatal("expected raw-mode result")
+	}
+	if !strings.Contains(string(result.Raw), "Purpose text.") {
+		t.Fatalf("got %q", result.Raw)
+	}
+	if strings.Contains(string(result.Raw), "Requirements") {
+		t.Fatalf("expected only the purpose section, got %q", result.Raw)
+	}
+}
+
+func TestTarget_FieldModeAnchor(t *testing.T) {
+	dir := t.TempDir()
+	specPath := filepath.Join(dir, "spec.md")
+	if err := os.WriteFile(specPath, []byte("# Title\n\n## Purpose\n\nPurpose text.\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	target := manifest.Target{
+		Name: "README",
+		Deps: []manifest.Dep{{Source: specPath, Anchor: "purpose", Field: "summary"}},
+	}
+	result, err := Target(target)
+	if err != nil {
+		t.Fatalf("Target: %v", err)
+	}
+	f, ok := result.Fields["summary"]
+	if !ok {
+		t.Fatalf("expected a summary field, got %+v", result.Fields)
+	}
+	if !strings.Contains(f.Value, "Purpose text.") || f.Value != f.Raw {
+		t.Fatalf("got %+v", f)
+	}
+}
+
+func TestTarget_FieldModeAnchorNested(t *testing.T) {
+	dir := t.TempDir()
+	specPath := filepath.Join(dir, "spec.md")
+	content := "# Title\n\n## Requirements\n\n### Requirement: X\nbody\n\n## Impact\n\nimpact\n"
+	if err := os.WriteFile(specPath, []byte(content), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	target := manifest.Target{
+		Name: "README",
+		Deps: []manifest.Dep{{Source: specPath, Anchor: "requirements", Nested: true, Field: "section"}},
+	}
+	result, err := Target(target)
+	if err != nil {
+		t.Fatalf("Target: %v", err)
+	}
+	f := result.Fields["section"]
+	if !strings.Contains(f.Value, "Requirement: X") {
+		t.Fatalf("expected nested capture to include the subsection, got %+v", f)
+	}
+	if strings.Contains(f.Value, "impact") {
+		t.Fatalf("expected nested capture to stop before the sibling section, got %+v", f)
+	}
+}
+
+func TestTarget_AnchorUnsupportedExtension(t *testing.T) {
+	dir := t.TempDir()
+	notesPath := filepath.Join(dir, "notes.txt")
+	if err := os.WriteFile(notesPath, []byte("# Purpose\nbody\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	target := manifest.Target{
+		Name: "README",
+		Deps: []manifest.Dep{{Source: notesPath, Anchor: "purpose", Field: "summary"}},
+	}
+	if _, err := Target(target); err == nil {
+		t.Fatal("expected an error resolving an anchor against a non-Markdown source")
 	}
 }
 

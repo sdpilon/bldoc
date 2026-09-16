@@ -27,7 +27,7 @@ func newRmDepCmd() *cobra.Command {
 			if err != nil {
 				return reportErr(cmd, err)
 			}
-			if err := manifest.RemoveDep(m, targetRef.Target, sourceRef.Source, sourceRef.Path); err != nil {
+			if err := manifest.RemoveDep(m, targetRef.Target, sourceRef.Source, sourceRef.Path, sourceRef.Anchor); err != nil {
 				return reportErr(cmd, err)
 			}
 			if err := manifest.Save(manifest.FileName, m); err != nil {

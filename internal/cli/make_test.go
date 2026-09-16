@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestMake_TooManyTargets(t *testing.T) {
@@ -163,6 +165,70 @@ func TestMake_FieldMode_OutputPathUnaffectedByExt(t *testing.T) {
 
 	if _, err := os.Stat(filepath.Join(".bldoc", "README.json")); err != nil {
 		t.Fatalf("expected .bldoc/README.json to exist: %v", err)
+	}
+}
+
+func TestMake_FieldMode_ExtYAML_WritesValidYAML(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if _, _, err := execute(t, "new", "README", "--mode", "field", "--ext", "yaml"); err != nil {
+		t.Fatalf("new: %v", err)
+	}
+	if err := os.WriteFile("notes.txt", []byte("some notes"), 0o644); err != nil {
+		t.Fatalf("WriteFile notes.txt: %v", err)
+	}
+	if _, _, err := execute(t, "add-dep", "README:summary", "notes.txt"); err != nil {
+		t.Fatalf("add-dep: %v", err)
+	}
+
+	if _, stderr, err := execute(t, "make", "README"); err != nil {
+		t.Fatalf("make: err=%v stderr=%q", err, stderr)
+	}
+
+	data, err := os.ReadFile(filepath.Join(".bldoc", "README.yaml"))
+	if err != nil {
+		t.Fatalf("reading .bldoc/README.yaml: %v", err)
+	}
+	var out map[string]map[string]string
+	if err := yaml.Unmarshal(data, &out); err != nil {
+		t.Fatalf("compiled output is not valid YAML: %v\noutput:\n%s", err, data)
+	}
+	if out["summary"]["value"] != "some notes" {
+		t.Fatalf("expected summary.value == \"some notes\", got %+v", out)
+	}
+}
+
+func TestMake_ListMode_ExtYAML_WritesValidYAML(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if _, _, err := execute(t, "new", "PROJECTS", "--mode", "list", "--ext", "yaml"); err != nil {
+		t.Fatalf("new: %v", err)
+	}
+	if err := os.WriteFile("bldoc.yaml", []byte("path: ~/bldoc\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile bldoc.yaml: %v", err)
+	}
+	if err := os.WriteFile("description.md", []byte("a CLI tool"), 0o644); err != nil {
+		t.Fatalf("WriteFile description.md: %v", err)
+	}
+	if _, _, err := execute(t, "add-dep", "PROJECTS:bldoc", "bldoc.yaml"); err != nil {
+		t.Fatalf("add-dep record-only: %v", err)
+	}
+	if _, _, err := execute(t, "add-dep", "PROJECTS:bldoc.description", "description.md"); err != nil {
+		t.Fatalf("add-dep record.field: %v", err)
+	}
+
+	if _, stderr, err := execute(t, "make", "PROJECTS"); err != nil {
+		t.Fatalf("make: err=%v stderr=%q", err, stderr)
+	}
+
+	data, err := os.ReadFile(filepath.Join(".bldoc", "PROJECTS.yaml"))
+	if err != nil {
+		t.Fatalf("reading .bldoc/PROJECTS.yaml: %v", err)
+	}
+	var out []map[string]interface{}
+	if err := yaml.Unmarshal(data, &out); err != nil {
+		t.Fatalf("compiled output is not valid YAML: %v\noutput:\n%s", err, data)
+	}
+	if len(out) != 1 || out[0]["path"] != "~/bldoc" || out[0]["description"] != "a CLI tool" {
+		t.Fatalf("expected one merged record, got %+v", out)
 	}
 }
 

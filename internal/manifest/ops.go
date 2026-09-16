@@ -61,7 +61,10 @@ func ShowTarget(m *Manifest, name string) (Target, error) {
 // rejects any dependency (including the first) whose field-addressing
 // doesn't match that mode; a target with no declared Mode rejects a dep
 // whose field-addressing doesn't match every dependency it already has,
-// once it has at least one.
+// once it has at least one. A declared list-mode target additionally
+// requires every dependency's Field to split into a record (bare, or
+// dotted record.field), and rejects a Format given on a record-only
+// (bare) dependency.
 func AddDep(m *Manifest, target string, dep Dep) error {
 	idx, err := findTargetIndex(m, target)
 	if err != nil {
@@ -70,14 +73,25 @@ func AddDep(m *Manifest, target string, dep Dep) error {
 	t := &m.Targets[idx]
 
 	newFieldMode := dep.Field != ""
-	if t.Mode != "" {
+	switch t.Mode {
+	case "list":
+		_, subfield, ok := SplitRecordField(dep.Field)
+		if !ok {
+			return fmt.Errorf("target %q is declared mode \"list\", which requires record-scoped addressing (%q is not \"record\" or \"record.field\")", target, dep.Field)
+		}
+		if dep.Format != "" && subfield == "" {
+			return fmt.Errorf("target %q: --format requires a record.field-scoped dependency, not a record-only one (%q)", target, dep.Field)
+		}
+	case "":
+		if len(t.Deps) > 0 {
+			existingFieldMode := t.Deps[0].Field != ""
+			if existingFieldMode != newFieldMode {
+				return fmt.Errorf("target %q mixes raw and field-mode dependencies", target)
+			}
+		}
+	default:
 		if wantField := t.Mode == "field"; wantField != newFieldMode {
 			return fmt.Errorf("target %q is declared mode %q, which doesn't accept this dependency's field-addressing", target, t.Mode)
-		}
-	} else if len(t.Deps) > 0 {
-		existingFieldMode := t.Deps[0].Field != ""
-		if existingFieldMode != newFieldMode {
-			return fmt.Errorf("target %q mixes raw and field-mode dependencies", target)
 		}
 	}
 

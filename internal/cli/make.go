@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -50,34 +49,34 @@ func newMakeCmd() *cobra.Command {
 
 // compileTarget compiles t and writes its intermediate under
 // intermediateDir: "<name>" (or "<name>.<ext>" if t.Ext is set) for a
-// raw-mode result, "<name>.json" for a field-mode one.
+// raw-mode result; "<name>.<ext>" (default "json") for a field- or
+// list-mode result, encoded per t.Ext (see compile.Encode).
 func compileTarget(t manifest.Target) error {
 	result, err := compile.Target(t)
 	if err != nil {
 		return err
 	}
+	data, err := compile.Encode(result, t.Ext)
+	if err != nil {
+		return fmt.Errorf("encoding intermediate for %q: %w", t.Name, err)
+	}
 	if err := os.MkdirAll(intermediateDir, 0o755); err != nil {
 		return fmt.Errorf("creating %s: %w", intermediateDir, err)
 	}
 
-	if result.IsField {
-		data, err := json.MarshalIndent(result.Fields, "", "  ")
-		if err != nil {
-			return fmt.Errorf("encoding intermediate for %q: %w", t.Name, err)
-		}
-		path := filepath.Join(intermediateDir, t.Name+".json")
-		if err := os.WriteFile(path, data, 0o644); err != nil {
-			return fmt.Errorf("writing %s: %w", path, err)
-		}
-		return nil
-	}
-
 	name := t.Name
-	if t.Ext != "" {
+	if result.IsField || result.IsList {
+		ext := t.Ext
+		if ext == "" {
+			ext = "json"
+		}
+		name += "." + ext
+	} else if t.Ext != "" {
 		name += "." + t.Ext
 	}
+
 	path := filepath.Join(intermediateDir, name)
-	if err := os.WriteFile(path, result.Raw, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return fmt.Errorf("writing %s: %w", path, err)
 	}
 	return nil

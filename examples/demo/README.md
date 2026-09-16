@@ -31,11 +31,11 @@ The checked-in `bldoc.toml` was produced by running these commands from
 within `examples/demo/`:
 
 ```
-bldoc new NOTES
+bldoc new NOTES --mode raw
 bldoc add-dep NOTES intro.txt
 bldoc add-dep NOTES license.txt
 
-bldoc new SUMMARY
+bldoc new SUMMARY --mode field
 bldoc add-dep SUMMARY:version --format "Python version must be %s to run this project." pyproject.toml:project.requires-python
 bldoc add-dep SUMMARY:name package.json:name
 bldoc add-dep SUMMARY:team config.yaml:owner.team

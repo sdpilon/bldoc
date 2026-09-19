@@ -18,8 +18,7 @@ full architecture and this project's OpenSpec changes.
 ## Commit messages
 
 Conventional Commits (`type(scope): summary`), single line, no body
-unless truly necessary, no AI-tool footer or session link. Scopes for
-this project:
+unless truly necessary. Scopes for this project:
 
 - `cli` — command surface / argument parsing
 - `manifest` — manifest file format, read/write

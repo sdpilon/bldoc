@@ -95,7 +95,7 @@ func TestShow_ExtensionShown(t *testing.T) {
 func TestShow_AnchorDependencyShown(t *testing.T) {
 	t.Chdir(t.TempDir())
 	newTarget(t, "README", "field")
-	if _, _, err := execute(t, "add-dep", "README:summary", "spec.md#purpose"); err != nil {
+	if _, _, err := execute(t, "add-dep", "README@summary", "spec.md#purpose"); err != nil {
 		t.Fatalf("add-dep: %v", err)
 	}
 
@@ -111,7 +111,7 @@ func TestShow_AnchorDependencyShown(t *testing.T) {
 func TestShow_NestedAnchorDependencyShown(t *testing.T) {
 	t.Chdir(t.TempDir())
 	newTarget(t, "README", "field")
-	if _, _, err := execute(t, "add-dep", "README:section", "spec.md#requirements", "--nested"); err != nil {
+	if _, _, err := execute(t, "add-dep", "README@section", "spec.md#requirements", "--nested"); err != nil {
 		t.Fatalf("add-dep: %v", err)
 	}
 

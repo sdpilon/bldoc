@@ -13,7 +13,7 @@ func TestParseSourceRef_WholeFile(t *testing.T) {
 }
 
 func TestParseSourceRef_Path(t *testing.T) {
-	ref, err := parseSourceRef("pyproject.toml:project.requires-python")
+	ref, err := parseSourceRef("pyproject.toml@project.requires-python")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -23,9 +23,9 @@ func TestParseSourceRef_Path(t *testing.T) {
 }
 
 func TestParseSourceRef_Malformed(t *testing.T) {
-	_, err := parseSourceRef("a:b:c")
+	_, err := parseSourceRef("a@b@c")
 	if err == nil {
-		t.Fatal("expected an error for a source-ref with more than one ':'")
+		t.Fatal("expected an error for a source-ref with more than one '@'")
 	}
 }
 
@@ -50,9 +50,9 @@ func TestParseSourceRef_AnchorBreadcrumb(t *testing.T) {
 }
 
 func TestParseSourceRef_AnchorAndPathCombined(t *testing.T) {
-	_, err := parseSourceRef("spec.md:some.path#purpose")
+	_, err := parseSourceRef("spec.md@some.path#purpose")
 	if err == nil {
-		t.Fatal("expected an error combining ':field-path' and '#anchor'")
+		t.Fatal("expected an error combining '@field-path' and '#anchor'")
 	}
 }
 

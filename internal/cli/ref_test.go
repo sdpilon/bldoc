@@ -13,7 +13,7 @@ func TestParseTargetRef_WholeFile(t *testing.T) {
 }
 
 func TestParseTargetRef_Field(t *testing.T) {
-	ref, err := parseTargetRef("README:version")
+	ref, err := parseTargetRef("README@version")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -23,8 +23,8 @@ func TestParseTargetRef_Field(t *testing.T) {
 }
 
 func TestParseTargetRef_Malformed(t *testing.T) {
-	_, err := parseTargetRef("README:version:extra")
+	_, err := parseTargetRef("README@version@extra")
 	if err == nil {
-		t.Fatal("expected an error for a target-ref with more than one ':'")
+		t.Fatal("expected an error for a target-ref with more than one '@'")
 	}
 }

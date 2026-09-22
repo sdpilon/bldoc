@@ -38,14 +38,14 @@ func TestRmDep_FormatFlagRejected(t *testing.T) {
 func TestRmDep_AnchorDependency(t *testing.T) {
 	t.Chdir(t.TempDir())
 	newTarget(t, "README", "field")
-	if _, _, err := execute(t, "add-dep", "README:a", "spec.md#purpose"); err != nil {
+	if _, _, err := execute(t, "add-dep", "README@a", "spec.md#purpose"); err != nil {
 		t.Fatalf("seed add-dep: %v", err)
 	}
-	if _, _, err := execute(t, "add-dep", "README:b", "spec.md#requirements"); err != nil {
+	if _, _, err := execute(t, "add-dep", "README@b", "spec.md#requirements"); err != nil {
 		t.Fatalf("seed add-dep: %v", err)
 	}
 
-	if _, stderr, err := execute(t, "rm-dep", "README:a", "spec.md#purpose"); err != nil {
+	if _, stderr, err := execute(t, "rm-dep", "README@a", "spec.md#purpose"); err != nil {
 		t.Fatalf("rm-dep: err=%v stderr=%q", err, stderr)
 	}
 

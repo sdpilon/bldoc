@@ -70,7 +70,7 @@ func TestMake_ExplicitTarget_FieldMode(t *testing.T) {
 	if err := os.WriteFile("pyproject.toml", []byte("[project]\nrequires-python = \"3.11\"\n"), 0o644); err != nil {
 		t.Fatalf("WriteFile pyproject.toml: %v", err)
 	}
-	if _, _, err := execute(t, "add-dep", "README:version", "--format", "Python version must be %s to run this project.", "pyproject.toml:project.requires-python"); err != nil {
+	if _, _, err := execute(t, "add-dep", "README@version", "--format", "Python version must be %s to run this project.", "pyproject.toml@project.requires-python"); err != nil {
 		t.Fatalf("add-dep: %v", err)
 	}
 
@@ -155,7 +155,7 @@ func TestMake_FieldMode_OutputPathUnaffectedByExt(t *testing.T) {
 	if err := os.WriteFile("pyproject.toml", []byte("[project]\nrequires-python = \"3.11\"\n"), 0o644); err != nil {
 		t.Fatalf("WriteFile pyproject.toml: %v", err)
 	}
-	if _, _, err := execute(t, "add-dep", "README:version", "pyproject.toml:project.requires-python"); err != nil {
+	if _, _, err := execute(t, "add-dep", "README@version", "pyproject.toml@project.requires-python"); err != nil {
 		t.Fatalf("add-dep: %v", err)
 	}
 
@@ -176,7 +176,7 @@ func TestMake_FieldMode_ExtYAML_WritesValidYAML(t *testing.T) {
 	if err := os.WriteFile("notes.txt", []byte("some notes"), 0o644); err != nil {
 		t.Fatalf("WriteFile notes.txt: %v", err)
 	}
-	if _, _, err := execute(t, "add-dep", "README:summary", "notes.txt"); err != nil {
+	if _, _, err := execute(t, "add-dep", "README@summary", "notes.txt"); err != nil {
 		t.Fatalf("add-dep: %v", err)
 	}
 
@@ -208,10 +208,10 @@ func TestMake_ListMode_ExtYAML_WritesValidYAML(t *testing.T) {
 	if err := os.WriteFile("description.md", []byte("a CLI tool"), 0o644); err != nil {
 		t.Fatalf("WriteFile description.md: %v", err)
 	}
-	if _, _, err := execute(t, "add-dep", "PROJECTS:bldoc", "bldoc.yaml"); err != nil {
+	if _, _, err := execute(t, "add-dep", "PROJECTS@bldoc", "bldoc.yaml"); err != nil {
 		t.Fatalf("add-dep record-only: %v", err)
 	}
-	if _, _, err := execute(t, "add-dep", "PROJECTS:bldoc.description", "description.md"); err != nil {
+	if _, _, err := execute(t, "add-dep", "PROJECTS@bldoc.description", "description.md"); err != nil {
 		t.Fatalf("add-dep record.field: %v", err)
 	}
 
